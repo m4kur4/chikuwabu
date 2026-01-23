@@ -1,0 +1,11 @@
+version: "3"
+services:
+  web:
+    build: ./web
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./php/php.ini:/usr/local/etc/php/php.ini
+      - ../src/:/src/
+    ports:
+      - 8080:80
