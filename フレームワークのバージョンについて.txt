@@ -1,0 +1,5 @@
+・Laravel6.x環境とLaravel10.x環境のいずれも作成しておく。
+・設定上の違いは以下
+　- Laravel6.x: PHPコンテナのバージョンを「PHP:7.4-fpm」にする
+　　※Laravel6.xはPHPバージョン8に対応していないため
+　- Laravel11.x: PHPコンテナのバージョンを「PHP:8.4-fpm」にする

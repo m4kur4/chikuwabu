@@ -1,0 +1,103 @@
+--
+PHP:8.2-fpmコンテナだとWEBサーバーのサービスコンテナを別途立ち上げる必要がある
+今回はNGINXコンテナを別途立ち上げて連携させる。
+
+--
+ApacheはPHPとWEBサーバーの機能が一台の中で併存しているが、
+NGINXを採用する構成ではPHPが動作するサーバーとリクエストを受け付けるサーバーが別。
+モダンな開発環境はこれが一般的。
+
+--
+NGINXでは静的ファイルを返却するので、WEBサーバーのコンテナにもプログラムリソースをマウントする必要がある。
+
+--
+composerのインストールは「マルチステージビルド」で行う
+> COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+--
+docker runコマンドが実行される初期位置やdocker-compose execでコンテナに入ったときの初期位置は
+Dockerファイルの下記記述で設定
+> WORKDIR /var/www/html
+
+--
+ついでにdocker-composeコマンドをsudo無しで動かせるようにしておく
+> $ sudo groupadd docker
+> $ sudo usermod -aG docker $USER
+> $ newgrp docker
+
+> sudo usermod -aG docker $USER
+> もし -a を付けずに -G だけを使うと、「現在そのユーザーが所属している他のサブグループ（sudoなど）をすべて脱退させて、dockerグループだけに所属させる」 という、かなり恐ろしい上書き動作になってしまいます。
+
+--
+docker-compose.ymlにおける以下の記述でエラー
+> depends_on:
+>   chikuwabu_db
+↓
+> ERROR: The Compose file './docker-compose.yml' is invalid because:
+> services.chikuwabu_web.depends_on contains an invalid type, it should be an array, or an object
+
+"chikuwabu_db"の前に"- "が必要 (これを付けることでarray型になる)
+
+--
+PHP-FPMコンテナはデフォルトで9000番ポートを割り当てられるのでdocker-compose.ymlにおける設定不要
+
+--
+Dockerコンテナ内で生成されホストにマウントされたファイルをホスト側から変更できない件
+↓
+dockerの操作がroot権限で実行され、ホスト側のログインユーザーでは権限が不足するため、
+ホスト側で権限を無理やり変更する
+> $ sudo chown -R $USER:$USER ./nginx/
+
+-- PHP8.2のLaravel環境構築メモ
+・コンテナに入る
+　> ~/development/chikuwabu/php_version_8/docker$ docker-compose exec chikuwabu_web bash
+・作業ディレクトリにいるので create-project コマンドでカレントディレクトリにプロジェクトを作成
+  ※ローカルで.gitkeepとかを作っていた場合は消しておく。(プロジェクト作成場所が空になってないとエラー)
+  > /var/www/html# composer create-project laravel/laravel .
+・ログとキャッシュを保持するディレクトリへ権限設定
+  > /var/www/html# chmod -R 777 storage bootstrap/cache
+
+-- php artisan serveとかが今回いらない理由(メモ)
+・WEBサーバーを起動する必要があるのはPHPコンテナの中にWEBサーバーのプログラムも内包する構成だったため
+・今回の構成ではNGINXコンテナとPHPコンテナが独立しており、
+　NGINXコンテナは起動した段階でバックグラウンドにてプログラムも動くのでリクエストを処理できる状態となる。
+　処理した結果、PHPコンテナの9000番ポートへリクエストを受け渡してPHPコンテナ上のLaravelが処理を実行、レスポンスを返している。
+
+-- コンテナのビルドとUPに成功してLaravelスタートページを開いたときのDBエラー
+・こんなエラー
+  > Illuminate\Database\QueryException
+  SQLiteに接続しにいってエラーになったっぽい
+  →.envでMySQLに接続するための設定が必要だった
+
+Laravelプロジェクト作成後は前述と同様にホスト側で権限設定すること(.envとか触れないので)
+> sudo chown -R $USER:$USER ./src/
+
+.env内でDB設定を変更した後はコンテナ内でキャッシュを削除する
+> php artisan config:clear
+
+以下のコマンドが成功すれば疎通確認OK
+> php artisan migrate
+
+-- XDebugでLaravelを開発できるようにする
+・VSCodeに「PHP Debug」の拡張機能をインストール(済)
+・VSCode左袖の虫/再生ボタンで開くUIからlounch.jsonを作り、configurationsにpathMappingを追記
+================================
+        {
+            "name": "Listen for Xdebug",
+            "type": "php",
+            "request": "launch",
+            "port": 9003,
+            // ↓追加
+            "pathMappings": {
+                "/var/www/html": "${workspaceFolder}/php_version_8/src" // workspaceRootでも同じような挙動だが古く非推奨らしい
+            }
+            // ↑追加
+        },
+================================
+└コンテナ内の/var/www/htmlと、ホスト側の"${workspaceFolder}/php_version_8/srcを紐づける　※docker-compose.yml内のマウント設定とそろえる(左右逆だけど)
+　ちなみに${workspaceFolder}にはプロジェクトのルートディレクトリ(/chikuwabu)が入る
+　ここの設定ができていないとXdebugがステップ実行してくれない
+
+※他のXdebugが動作しない要因
+・コンテナ内でphp -vをしてもXdebugの名前が出てこない(PHP拡張機能が有効化できていない)
+・そもそもxdebugと疎通していない(WSLのDockerからホストPCに対して通信する際「host.docker.internal」が解決できていない)
