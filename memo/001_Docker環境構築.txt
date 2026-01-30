@@ -101,3 +101,42 @@ Laravelプロジェクト作成後は前述と同様にホスト側で権限設�
 ※他のXdebugが動作しない要因
 ・コンテナ内でphp -vをしてもXdebugの名前が出てこない(PHP拡張機能が有効化できていない)
 ・そもそもxdebugと疎通していない(WSLのDockerからホストPCに対して通信する際「host.docker.internal」が解決できていない)
+
+-- PHP7環境でLaravel6.xをセットアップする
+コンテナ立ち上げ～作業ディレクトリを開くまでは同じ
+コンテナ内で下記コマンド実行
+> $ composer create-project "laravel/laravel:^6.0" .
+
+/src配下のリソースにホスト側からのアクセス権限付与
+> $ /chikuwabu/php_version_7$ sudo chown -R $USER:$USER ./src/
+
+スタートページでDBエラーになったので、.envのDB設定をPHP8と同様に変更
+その後、キャッシュをクリア
+> $ php artisan config:clear
+
+ログとキャッシュの権限付与も忘れずに
+chmod -R 777 storage bootstrap/cache
+
+XDEBUG用の設定をlounch.jsonに付与して、/src/public/index.phpの適当な位置でブレークポイントが動けば動確OK！
+
+↓PHP8環境構築で追加した記述を一つ下にコピペしてpathMappingsだけ変更
+==========
+        {
+            "name": "Listen for Xdebug (PHP7.4)",
+            "type": "php",
+            "request": "launch",
+            "port": 9003,
+            // ↓追加
+            "pathMappings": {
+                "/var/www/html": "${workspaceFolder}/php_version_7/src" // ★php_version7にする！
+            }
+            // ↑追加
+        },
+==========
+
+-- Gitのデフォルトエディタ変更忘れてた
+git config --global core.editor "vi"
+
+-- nginxとPHP-FPM、それぞれのコンテナの立ち位置
+* Nginxのコンテナ: WEBサーバー(リバースプロキシサーバー)
+* PHP-FPMのコンテナ: APサーバー

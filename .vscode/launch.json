@@ -4,15 +4,25 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
-            "name": "Listen for Xdebug",
+            "name": "Listen for Xdebug (PHP8.2)",
             "type": "php",
             "request": "launch",
             "port": 9003,
             // ↓追加
             "pathMappings": {
                 "/var/www/html": "${workspaceFolder}/php_version_8/src"
+            }
+            // ↑追加
+        },
+        {
+            "name": "Listen for Xdebug (PHP7.4)",
+            "type": "php",
+            "request": "launch",
+            "port": 9003,
+            // ↓追加
+            "pathMappings": {
+                "/var/www/html": "${workspaceFolder}/php_version_7/src"
             }
             // ↑追加
         },

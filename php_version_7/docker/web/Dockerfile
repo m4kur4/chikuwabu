@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y \
 	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
 	&& docker-php-ext-install -j$(nproc) gd pdo_mysql mbstring
 
-# install for xdebug
-RUN pecl install xdebug && docker-php-ext-enable xdebug
+# install for xdebug (PHP7.4における最終安定板のverを明示指定)
+RUN pecl install xdebug-3.1.6 && docker-php-ext-enable xdebug
 
 # INSTALL composer
 # RUN cd /usr/bin \
