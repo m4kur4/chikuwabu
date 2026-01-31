@@ -14,3 +14,8 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+// ねこ
+Route::get('/miaw', function () {
+    return view('nukonuko');
+});

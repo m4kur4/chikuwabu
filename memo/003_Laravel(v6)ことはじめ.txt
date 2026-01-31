@@ -1,0 +1,6 @@
+-- ルーティングの定義
+/home/m4kur4/development/chikuwabu/php_version_7/src/routes/web.php
+- web.phpのルートを追加・変更した場合はDockerコンテナ内でキャッシュクリアする
+  > $ php artisan route:clear
+  > $ php artisan config:clear # こっちは念のため
+- それでも動かない場合、ワイルドカード等でより上に定義されていれるルートの方を読んでいるケースとかもあるため注意
