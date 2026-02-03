@@ -1,0 +1,23 @@
+
+1. webコンテナ内で以下のコマンドを実行
+> php artsian make:command {コマンドクラス名}
+
+2. Laravelが以下のファイルを作ってくれる
+ > /chikuwabu/php_version_8/src/app/Console/Commands/TestCommand.php
+
+3. srcに再度権限を付与 (ローカルから触れないため)
+ > sudo chown -R $USER:$USER /var/www/html/chikuwabu/php_version_8/src/
+  - これイチイチやるの大変なので何か良い方ありそう･･･
+
+4. [3]のソースでメンバ変数$signatureに実行コマンド定義
+ - 引数もどこかでできるけどいったんおいておく
+
+5. [3]のソースでhandle()関数がエントリポイントになる
+ - 適当にprintf()を書いておく
+
+6. webコンテナ内で[3]の実行コマンドを以下の通り叩く
+ > php artisan {実行コマンド}
+
+7. 結果
+ > root@008bc8e0f451:/var/www/html# php artisan command:test-command
+ > This is test command!
