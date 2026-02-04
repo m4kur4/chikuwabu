@@ -157,14 +157,14 @@ class SyncGitHubRepositories extends Command
 [x] マイグレーションを実行
  * php artisan migrate
 
-[ ] DBにログイン
+[x] DBにログイン
  * m4kur4@DESKTOP-1B3EP9B:~/development/chikuwabu/php_version_8/docker$ docker-compose exec chikuwabu_db bash
  * bash-5.1# mysql -u chikuwabu -p
    >> chikuwabu3939ococ
  > show databases
  > use chikuwabu_db
 
-
+[x] マイグレーションの結果を確認
 マイグレーション実行前のchikuwabu_db内テーブル
 mysql> show tables;
   |
@@ -223,4 +223,37 @@ mysql> desc users;
 | updated_at              | timestamp       | YES  |     | NULL    |                |
 +-------------------------+-----------------+------+-----+---------+----------------+
 11 rows in set (0.01 sec)
-　
+
+[x] GitHub上で「OAuth app」を作成 (要: GitHubログイン)
+ * https://github.com/settings/apps
+   https://github.com/settings/applications/new
+   - homepage url はローカル環境なので「http://localhost:8080/」とする
+   - Authorization callback URLは【認証後にリダイレクトさせたいURL】を入れるらしいのでいったんhomepage urlと同じにしておく
+
+[x] .envに↑でつくったappの認証情報を入力
+ > GITHUB_CLIENT_ID={{YOUR_CLIENT_ID}}
+ > GITHUB_CLIENT_SECRET={{YOUR_CLIENT_SECRET}}
+ > GITHUB_REDIRECT_URI={{YOUR_AUTH_CALLBACK_URL}}
+
+[x] config/services.phpへ↑の情報を追記
+ > 'github' => [
+ >    'client_id' => env('GITHUB_CLIENT_ID'),
+ >    'client_secret' => env('GITHUB_CLIENT_SECRET'),
+ >    'redirect' => env('GITHUB_REDIRECT_URI'),
+ > ],
+ ※Controllerから直接Envを見るより見やすい、かつキャッシュが効くため高速になる
+   Laravelが推奨する「サービス関連の設定情報」の読み込み方
+ ※更新のたびにキャッシュクリアは必要になるため注意
+ # キャッシュ作成
+ $ php artisan config:cache
+ # キャッシュクリア
+ $ php artisan config:clear
+
+ ★そもそも今回使おうとしているsoialiteはここにドライバーのキー"github"がある想定で動く
+   なので/config/services.phpに設定されていないと動かない
+
+[ ] アクセストークン取得処理の実装
+ [ ] socialiteのインストール
+  $ cd /var/www/html
+  $ composer require laravel/socialite
+ [ ] routes/web.phpにアクセストークンのリクエスト用ルーティングを追加

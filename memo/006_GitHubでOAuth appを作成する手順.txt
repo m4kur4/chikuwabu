@@ -1,0 +1,68 @@
+GitHubの管理画面からこれらの情報を取得する手順を解説します。
+まだGitHubアカウントにログインした状態で進めてくださいね。
+
+---
+
+## 🛠️ GitHubでの情報取得ステップ
+
+### 1. OAuth Appの作成画面へ行く
+
+1. GitHubの右上のアイコンをクリックし、**Settings** を開きます。
+2. 左サイドバーの一番下にある **Developer settings** をクリックします。
+3. **OAuth Apps** を選択し、**New OAuth App** ボタンを押します。
+
+### 2. アプリ情報を入力する
+
+登録画面では、以下のように入力してください。
+
+* **Application name**: `Laravel-Practice`（何でもOKです）
+* **Homepage URL**: `http://localhost:8000`
+* **Authorization callback URL**: `http://localhost:8000/auth/github/callback`
+* **重要：** ここを間違えると認証エラーになります。末尾まで正確に入力してください。
+
+
+
+入力できたら **Register application** をクリックします。
+
+---
+
+## 3. 3つの情報の確認方法
+
+アプリの登録が完了すると、専用の管理画面が表示されます。
+
+### ① GITHUB_CLIENT_ID
+
+画面に表示されている **Client ID** という文字列をコピーして `.env` に貼り付けます。
+
+### ② GITHUB_CLIENT_SECRET
+
+1. 同じ画面にある **Generate a new client secret** というボタンをクリックします。
+2. 文字列が表示されるので、それをコピーします。
+* **注意：** この文字列は一度ページを離れると二度と表示されません。必ずすぐに `.env` にメモしてください。
+
+
+
+### ③ GITHUB_REDIRECT_URI
+
+これは、先ほど手順2で設定した「Authorization callback URL」と同じものです。
+`.env` には `http://localhost:8000/auth/github/callback` と記述してください。
+
+---
+
+## .env への記述例
+
+取得した情報をこのように当てはめます。
+
+```env
+GITHUB_CLIENT_ID=4b...（あなたのID）
+GITHUB_CLIENT_SECRET=3f...（あなたのSecret）
+GITHUB_REDIRECT_URI=http://localhost:8000/auth/github/callback
+
+```
+
+> [!WARNING]
+> `.env` ファイルを編集した後は、設定を反映させるために一度 **`php artisan config:clear`** を実行するか、サーバーを再起動（`php artisan serve` をやり直す）することをお勧めします。
+
+これで準備は完璧です！
+
+**次はブラウザで `http://localhost:8000/auth/github` にアクセスして、認証画面が出るか試してみますか？**
