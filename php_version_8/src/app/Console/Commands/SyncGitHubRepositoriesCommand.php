@@ -6,12 +6,13 @@ use Illuminate\Console\Command;
 
 class SyncGitHubRepositories extends Command
 {
+    protected $signature
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:sync-git-hub-repositories';
+    protected $signature = 'command:sync-git-hub-repositories';
 
     /**
      * The console command description.
@@ -25,6 +26,6 @@ class SyncGitHubRepositories extends Command
      */
     public function handle()
     {
-        //
+        print("hoge! piyo! figa!!\n");
     }
 }

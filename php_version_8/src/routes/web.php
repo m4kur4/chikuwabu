@@ -11,3 +11,7 @@ Route::get('/auth/github', function () {
     $scopes = ['repo'];
     return Socialite::driver('github')->scopes($scopes)->redirect();
 });
+
+Route::get('/auth/github/callback', function () {
+    $git_hub_user = Socialite::driver('github')->user();
+});
