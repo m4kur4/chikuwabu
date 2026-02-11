@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Helper;
+namespace App\Helpers;
 
 class SqlHelper
 {
@@ -50,10 +50,15 @@ class SqlHelper
 
         // 更新データに存在しないカラム名が指定されている場合はエラー
         $firstDataKeys = array_keys($datas[0]);
+        $invalidColumns = [];
         foreach ($allTargetFields as $field) {
             if (!in_array($field, $firstDataKeys)) {
-                throw new \InvalidArgumentException("指定したカラム{$field}が更新データに存在しません");
+                $invalidColumns[] = $field;
             }
+        }
+        if (count($invalidColumns) > 0) {
+            $invalidColumnName = implode(', ', $invalidColumns);
+            throw new \InvalidArgumentException("指定したカラム「{$invalidColumnName}」が更新データに存在しません");
         }
 
         // クエリ内で使うテーブル名のエイリアス

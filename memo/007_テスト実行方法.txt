@@ -1,4 +1,16 @@
+1.ファイルパス直指定
 /var/www/html/vendor/bin/phpunit
+
+2. artisanコマンド軽油
+php artisan test
+
+2-1. ファイル指定
+php artisan test tests/Unit/ExampleTest.php
+
+2-3. テスト名指定
+php artisan test --filter test_basic_test
+
+＝============
 
 ## ハマりポイント
 以下の実行時 ★ 部分で「ParseError: syntax error, unexpected token "}", expecting ";"」エラー
