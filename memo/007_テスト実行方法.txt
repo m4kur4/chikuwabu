@@ -1,0 +1,135 @@
+/var/www/html/vendor/bin/phpunit
+
+## ハマりポイント
+以下の実行時 ★ 部分で「ParseError: syntax error, unexpected token "}", expecting ";"」エラー
+
+-------------------------------------------------------
+    public function test_sql_generation()
+    {
+        $table = 'users';
+        $datas = [
+            ['region' => 'Asia', 'id' => '001', 'name' => 'Hoge[001]', 'status' => 'active'],
+            ['region' => 'Europe', 'id' => '002', 'name' => 'Piyo[002]', 'status' => 'inactive']
+        ];
+        $keys = ['region', 'id'];
+        $columns = ['name', 'status'];
+
+        $result = buildBulkUpdateQuery($table, $datas, $keys, $columns); // ★ここ！
+
+        $this->assertTrue(true);
+
+        // 戻り値の構造チェック
+        // $this->assertArrayHasKey('query', $result);
+        // $this->assertArrayHasKey('bindings', $result);
+
+        // SQL文のチェック
+        // $queryExpected = 'UPDATE users AS t1 '
+
+    }
+-------------------------------------------------------
+
+## 調べものメモ
+・autoloadはcomposer.jsonで定義したマッピングに応じてファイルを探しに行ってくれる仕組み
+・autoload-devは開発環境(と設定した)場合のみ↑に加えて有効化される
+
+★テストコード上の文法エラーというように見えるが、実際はbuildBulkUpdateQuery()内の文法エラー
+└当該関数の中身をコメントアウトすればPASSするため
+
+## テストコードが動かない場合のチェックポイント
+-----------------------------------------------------------------------------------
+1. 名前空間が正しいか
+
+2. use宣言と[1]の名前空間が一致しているか
+
+3. ファイルパスが正しいか
+
+4. composer.jsonのautoload設定が正しいか
+
+5. エラーの場所を疑う: エラーが出た行だけでなく、その呼び出し先のファイルや1つ前の行にセミコロン忘れがないか。
+
+6. 全角文字の混入: 謎の ParseError が消えない時は、エディタの検索機能で**「全角スペース」**を全置換してみる。
+
+7. 地図の更新: 住所もファイル名も合っているのにダメな時は composer dump-autoload。
+-----------------------------------------------------------------------------------
+
+## 1. 主要な Assert 関数一覧
+
+よく使われるものを目的別にまとめました。
+
+| 関数名 | 用途 |
+| --- | --- |
+| `assertEquals($a, $b)` | **$a と $b が等しいか**（型が違っても中身が合えばOK） |
+| `assertSame($a, $b)` | **$a と $b が完全に一致するか**（型まで厳密にチェック） |
+| `assertTrue($x)`/`assertFalse($x)` | **$x が true か false か** |
+| `assertCount($n, $arr)` | **配列の要素数**が $n 個か |
+| `assertArrayHasKey($key, $arr)` | 配列に特定の**キー**が存在するか |
+| `assertStringContainsString($needle, $haystack)` | 文字列の中に特定の**文字が含まれているか** |
+| `assertMatchesRegularExpression($pattern, $str)\` | **正規表現**で文字列をチェックする |
+
+---
+
+## 2. 例外（Exception）のテスト方法
+
+「特定の条件でちゃんとエラーを投げてくれるか」をテストするのは非常に重要です。例外のテストは、**例外が発生する処理を呼ぶ前**に「これから例外が起きるよ」と宣言するスタイルで書きます。
+
+### 実装例
+
+`SqlHelper` の「カラム存在チェック」が正しく動くかテストしてみましょう。
+
+```php
+public function test_throws_exception_if_column_missing()
+{
+    // 1. 期待する例外のクラス名を指定
+    $this->expectException(\InvalidArgumentException::class);
+
+    // 2. (任意) 期待するエラーメッセージの一部を指定
+    $this->expectExceptionMessage('指定したカラム age が更新データに存在しません');
+
+    // 3. 例外が発生するはずの処理を実行
+    $datas = [['id' => 1, 'name' => 'Bob']];
+    $keys = ['id'];
+    $columns = ['age']; // データに存在しないカラムを指定
+
+    SqlHelper::buildBulkUpdateQuery('users', $datas, $keys, $columns);
+
+    // ※ ここから下のコードは、例外が発生すると実行されずにテスト終了となります
+}
+
+```
+
+---
+
+## 3. SQL生成ロジックの「合わせ技」テスト
+
+今回作成した `SqlHelper` をより厳密にテストするなら、以下のような組み合わせがおすすめです。
+
+```php
+public function test_buildBulkUpdateQuery_full_check()
+{
+    $table = 'staff';
+    $datas = [
+        ['id' => 10, 'name' => 'Alice'],
+        ['id' => 20, 'name' => 'Bob'],
+    ];
+    $keys = ['id'];
+    $columns = ['name'];
+
+    $result = SqlHelper::buildBulkUpdateQuery($table, $datas, $keys, $columns);
+
+    // SQLの構造チェック
+    $this->assertStringContainsString('UPDATE staff AS t1', $result['query']);
+    $this->assertStringContainsString('SET t1.name = t2.name', $result['query']);
+
+    // バインド値の「数」と「内容」をチェック
+    $this->assertCount(4, $result['bindings']); // (id + name) * 2件 = 4
+    $this->assertSame(10, $result['bindings'][0]); // 最初の値は 10
+    $this->assertSame('Alice', $result['bindings'][1]); // 次の値は Alice
+}
+
+```
+
+### 次のステップへのアドバイス
+
+例外のテストができるようになると、**「間違った使い方をされた時に、親切にエラーを出してシステムを守れるか」**を自動で保証できるようになります。
+
+まずは、わざとカラム名を間違えて `expectException` が緑色（PASS）になるのを確認してみてください。エラーを期待通りに出せることが確認できたら、開発者として一段上の安心感が手に入りますよ！
