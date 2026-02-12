@@ -50,12 +50,4 @@ class SqlHelperTest extends TestCase
         $columns_invalid = ['name', 'status', 'foo']; // fooがおかしい
         SqlHelper::buildBulkUpdateQuery($table, $datas, $keys_invalid, $columns_invalid);
     }
-
-    /**
-     * A basic test example.
-     */
-    public function test_that_true_is_true(): void
-    {
-        $this->assertTrue(true);
-    }
 }
